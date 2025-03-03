@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .category {
+            margin-bottom: 20px;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .vote-record {
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Voting System</h1>
+    
+    <div id="participantForm">
+        <label for="numParticipants">Enter the number of participants:</label>
+        <input type="text" id="numParticipants" oninput="validateInput(this)">
+        <button onclick="setupParticipants()">Next</button>
+    </div>
+
+    <div id="votingSection" style="display: none;">
+        <h2>Voting</h2>
+        <div id="participantName"></div>
+        <div id="categories"></div>
+        <button onclick="submitVote()">Submit Vote</button>
+    </div>
+
+    <div id="resultsSection" style="display: none;">
+        <h2>Final Poll Results</h2>
+        <div id="finalResults"></div>
+        <h2>Individual Votes</h2>
+        <div id="individualVotes"></div>
+    </div>
+
+    <script>
+        const categories = {
+            "Venue": ["Restaurant", "University", "Outdoor", "Home"],
+            "Budget per Person": ["200 BDT", "300 BDT", "500 BDT", "1000 BDT"],
+            "Food Preference": ["Buffet", "Set Menu", "Traditional", "Fast Food"],
+            "Date": ["March 10", "March 15", "March 20", "March 25"]
+        };
+
+        let votes = {};
+        let voteRecords = [];
+        let numParticipants;
+        let currentParticipant = 0;
+        let currentVote = {};
+
+        // Validate input to allow only integers
+        function validateInput(input) {
+            input.value = input.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+        }
+
+        function setupParticipants() {
+            const numParticipantsInput = document.getElementById('numParticipants').value;
+            if (numParticipantsInput === "") {
+                alert("Please enter the number of participants.");
+                return;
+            }
+
+            // Treat input as a string but convert to number for logic
+            numParticipants = parseInt(numParticipantsInput, 10);
+            if (numParticipants <= 0) {
+                alert("Please enter a valid number of participants.");
+                return;
+            }
+
+            document.getElementById('participantForm').style.display = 'none';
+            document.getElementById('votingSection').style.display = 'block';
+            startVoting();
+        }
+
+        function startVoting() {
+            currentParticipant++;
+            if (currentParticipant > numParticipants) {
+                displayResults();
+                return;
+            }
+
+            document.getElementById('participantName').innerText = `Participant ${currentParticipant} Voting:`;
+            currentVote = { name: `Participant ${currentParticipant}`, choices: {} };
+            displayCategories();
+        }
+
+        function displayCategories() {
+            const categoriesDiv = document.getElementById('categories');
+            categoriesDiv.innerHTML = '';
+            for (const [category, options] of Object.entries(categories)) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+                categoryDiv.innerHTML = `<strong>${category} Options:</strong><br>`;
+                options.forEach((option, index) => {
+                    categoryDiv.innerHTML += `
+                        <input type="radio" name="${category}" value="${option}" id="${category}_${index}">
+                        <label for="${category}_${index}">${option}</label><br>
+                    `;
+                });
+                categoriesDiv.appendChild(categoryDiv);
+            }
+        }
+
+        function submitVote() {
+            for (const [category, options] of Object.entries(categories)) {
+                const selectedOption = document.querySelector(`input[name="${category}"]:checked`);
+                if (selectedOption) {
+                    currentVote.choices[category] = selectedOption.value;
+                    if (!votes[category]) votes[category] = {};
+                    votes[category][selectedOption.value] = (votes[category][selectedOption.value] || 0) + 1;
+                }
+            }
+            voteRecords.push(currentVote);
+            startVoting();
+        }
+
+        function displayResults() {
+            document.getElementById('votingSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+
+            const finalResultsDiv = document.getElementById('finalResults');
+            finalResultsDiv.innerHTML = '';
+            for (const [category, options] of Object.entries(votes)) {
+                let mostVoted = '';
+                let maxVotes = 0;
+                finalResultsDiv.innerHTML += `<div><strong>${category} Results:</strong><br>`;
+                for (const [option, count] of Object.entries(options)) {
+                    finalResultsDiv.innerHTML += `${option}: ${count} votes<br>`;
+                    if (count > maxVotes) {
+                        maxVotes = count;
+                        mostVoted = option;
+                    }
+                }
+                finalResultsDiv.innerHTML += `Most preferred ${category}: ${mostVoted}</div><br>`;
+            }
+
+            const individualVotesDiv = document.getElementById('individualVotes');
+            individualVotesDiv.innerHTML = '';
+            voteRecords.forEach(voter => {
+                individualVotesDiv.innerHTML += `<div class="vote-record"><strong>${voter.name} voted for:</strong><br>`;
+                for (const [category, choice] of Object.entries(voter.choices)) {
+                    individualVotesDiv.innerHTML += `${category}: ${choice}<br>`;
+                }
+                individualVotesDiv.innerHTML += `--------------------------</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
